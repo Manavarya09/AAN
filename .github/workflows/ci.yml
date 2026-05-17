@@ -44,6 +44,9 @@ jobs:
     - name: Run linter
       run: ruff check config/ services/
     
+    - name: Run type checker
+      run: mypy config/ services/ --ignore-missing-imports
+    
     - name: Run tests with coverage
       run: pytest tests/ -v --cov=config --cov=services --cov-report=xml --cov-report=term-missing
     
