@@ -120,7 +120,21 @@ async def websocket_job_updates(websocket: WebSocket, job_id: str):
 @app.get("/health")
 @limiter.limit("100/minute")
 async def health_check():
-    return {"status": "healthy", "service": "AAN API"}
+    db_status = "unknown"
+    try:
+        from config.database.connection import engine
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_status = "healthy"
+    except Exception:
+        db_status = "unhealthy"
+    
+    return {
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "service": "AAN API",
+        "database": db_status
+    }
 
 
 @app.get("/")
