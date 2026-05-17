@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Optional
 
@@ -70,7 +70,7 @@ class CircuitBreaker:
         async with self._lock:
             self.stats.failures = 0
             self.stats.last_failure_time = None
-            
+
             if self.stats.state == CircuitState.HALF_OPEN:
                 self.stats.successes += 1
                 if self.stats.successes >= self.config.success_threshold:
@@ -83,7 +83,7 @@ class CircuitBreaker:
         async with self._lock:
             self.stats.failures += 1
             self.stats.last_failure_time = time.time()
-            
+
             if self.stats.state == CircuitState.HALF_OPEN:
                 self.stats.state = CircuitState.OPEN
                 self.stats.successes = 0

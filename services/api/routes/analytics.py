@@ -1,16 +1,15 @@
 """AI-powered analytics and recommendations."""
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-from typing import Optional
 from uuid import UUID
 
-from services.api.routes.auth import get_current_user
-from config.database.models import User, NegotiationJob
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from config.database import get_db
-from services.worker.ml.models import price_predictor, image_analyzer, seller_analyzer
+
+from config.database.connection import async_session_maker
+from config.database.models import NegotiationJob, User
+from services.api.routes.auth import get_current_user
+from services.worker.ml.models import image_analyzer, price_predictor, seller_analyzer
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 
@@ -36,14 +35,14 @@ async def predict_optimal_price(
     current_user: User = Depends(get_current_user),
 ):
     """Predict optimal price for a listing."""
-    
+
     prediction = await price_predictor.predict(
         title=request.title,
         condition=request.condition,
         market_prices=request.market_prices,
         days_listed=request.days_listed,
     )
-    
+
     return {
         "recommended_price": prediction.recommended_price,
         "confidence": prediction.confidence,
@@ -59,18 +58,18 @@ async def analyze_listing(
     current_user: User = Depends(get_current_user),
 ):
     """Analyze a listing for condition and fraud detection."""
-    
+
     image_analysis = await image_analyzer.analyze_condition(
         image_urls=request.image_urls,
         title=request.title,
     )
-    
+
     fraud_detection = await image_analyzer.detect_fake_listings(
         image_urls=request.image_urls,
         price=request.price,
         title=request.title,
     )
-    
+
     return {
         "image_analysis": image_analysis,
         "fraud_detection": fraud_detection,
@@ -83,7 +82,7 @@ async def get_market_insights(
     current_user: User = Depends(get_current_user),
 ):
     """Get market insights for a product query."""
-    
+
     return {
         "query": query,
         "avg_price": 0,
@@ -100,7 +99,7 @@ async def analyze_seller(
     current_user: User = Depends(get_current_user),
 ):
     """Get seller trust analysis."""
-    
+
     trust = await seller_analyzer.calculate_trust_score(
         seller_name=seller_id,
         platform=platform,
@@ -108,7 +107,7 @@ async def analyze_seller(
         negotiation_count=15,
         acceptance_rate=0.65,
     )
-    
+
     return trust
 
 
@@ -118,20 +117,20 @@ async def calculate_deal_score(
     current_user: User = Depends(get_current_user),
 ):
     """Calculate overall deal score for a job."""
-    
+
     async with async_session_maker() as db:
         result = await db.execute(
             select(NegotiationJob).where(NegotiationJob.id == job_id)
         )
         job = result.scalar_one_or_none()
-    
+
     if not job:
         return {"error": "Job not found"}
-    
+
     deal_score = 0.0
-    
+
     max_discount = ((job.max_price - job.target_price) / job.max_price) * 100
-    
+
     if max_discount > 30:
         deal_score += 40
     elif max_discount > 20:
@@ -140,12 +139,12 @@ async def calculate_deal_score(
         deal_score += 20
     else:
         deal_score += 10
-    
+
     if job.status == "completed":
         deal_score += 30
-    
+
     deal_score = min(100, deal_score)
-    
+
     return {
         "job_id": str(job_id),
         "score": deal_score,

@@ -1,12 +1,11 @@
 """Simple HTML dashboard for AAN."""
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query
 from fastapi.responses import HTMLResponse
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
-from config.database.models import NormalizedListing, NegotiationJob
+from config.database.models import NegotiationJob, NormalizedListing
 
 router = APIRouter(prefix="", tags=["dashboard"])
 
@@ -228,7 +227,6 @@ async def dashboard(
 
     html = re.sub(r"\{\{ (\w+) \}\}", replace_var, html)
 
-    from typing import Any
     listings_json = str(listings_data).replace("'", '"')
     html = html.replace("{{ listings }}", listings_json)
 

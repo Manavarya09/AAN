@@ -1,17 +1,16 @@
 """Amazon.ae scraper with price tracking."""
 
 import logging
-from typing import Optional
 import re
+from typing import Optional
 
 from bs4 import BeautifulSoup
-from playwright.async_api import Page
 from playwright_stealth import stealth_async
 
 from config.scrapers.configs import AMAZON_CONFIG, ScraperConfig
+from services.worker.scrapers.anti_detection import random_delay
 from services.worker.scrapers.base import RawListing
 from services.worker.scrapers.platforms.base_scraper import BaseScraper
-from services.worker.scrapers.anti_detection import random_delay
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class AmazonScraper(BaseScraper):
         search_url = self.config.search_url_template.format(
             query=query.replace(" ", "+")
         )
-        
+
         if page_num > 1:
             search_url += f"&page={page_num}"
 
@@ -34,12 +33,12 @@ class AmazonScraper(BaseScraper):
 
         try:
             page = await self.context.new_page()
-            
+
             await stealth_async(page)
             await page.goto(search_url, timeout=30000)
-            
+
             await random_delay(1000, 2000)
-            
+
             await page.wait_for_selector(".s-result-item", timeout=10000)
 
             content = await page.content()
@@ -53,7 +52,7 @@ class AmazonScraper(BaseScraper):
 
     async def extract_listings_from_html(self, html: str) -> list[RawListing]:
         soup = BeautifulSoup(html, "html.parser")
-        
+
         listings = []
         items = soup.select(".s-result-item") or soup.select("[data-component-type='s-search-result']")
 
@@ -74,9 +73,9 @@ class AmazonScraper(BaseScraper):
         price_elem = item.select_one(".a-price-whole") or item.select_one("[data-a-color='price'] .a-offscreen")
         image_elem = item.select_one("img.s-image")
         rating_elem = item.select_one(".a-icon-alt")
-        
+
         link_elem = item.select_one("h2 a") or item.select_one("a.a-link-normal")
-        
+
         title = title_elem.get_text(strip=True) if title_elem else ""
         if not title:
             return None

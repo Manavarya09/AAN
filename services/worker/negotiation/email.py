@@ -101,8 +101,8 @@ class IMAPClient:
         from_address: str,
         since: Optional[datetime] = None,
     ) -> list[dict]:
-        import imaplib
         import email
+        import imaplib
 
         replies = []
 

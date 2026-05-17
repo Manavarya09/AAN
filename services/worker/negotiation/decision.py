@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-
 OFFSET_PRICE = 0.45
 OFFSET_TRUST = 0.25
 OFFSET_TIME = 0.15
@@ -50,7 +49,7 @@ def should_auto_close(
 def calculate_time_to_close(started_at: datetime, closed_at: Optional[datetime] = None) -> float:
     if closed_at is None:
         closed_at = datetime.utcnow()
-    
+
     delta = closed_at - started_at
     return delta.total_value / 3600
 
@@ -94,8 +93,8 @@ def select_best_deal(
     min_threshold: float = 0.50,
 ) -> Optional[DealResult]:
     valid_deals = [d for d in deals if d.score >= min_threshold]
-    
+
     if not valid_deals:
         return None
-    
+
     return max(valid_deals, key=lambda x: x.score)

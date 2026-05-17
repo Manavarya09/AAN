@@ -112,7 +112,11 @@ def classify_seller(
     if target_price * 0.95 >= price:
         return SellerType.RIGID
 
-    negotiables = ["ono", "or near offer", "negotiable", "serious buyer", "quick sale"]
+    firm_words = ["firm", "fixed", "non-negotiable", "no offers", "best price"]
+    if any(kw in text for kw in firm_words):
+        return SellerType.RIGID
+
+    negotiables = ["ono", "or near offer", "negotiable", "serious buyer", "quick sale", "obo", "or best offer"]
     if any(kw in text for kw in negotiables):
         return SellerType.FLEXIBLE
 

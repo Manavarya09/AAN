@@ -2,7 +2,6 @@
 
 from typing import Optional
 
-
 OFFSET_MIN_PRICE = 0.4
 OFFSET_CONDITION = 0.2
 OFFSET_RECENCY = 0.15

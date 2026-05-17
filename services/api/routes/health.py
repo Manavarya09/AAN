@@ -1,6 +1,6 @@
 """System health and monitoring endpoints."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from config.database.connection import async_session_maker
@@ -16,7 +16,7 @@ async def system_health():
         "status": "healthy",
         "services": {},
     }
-    
+
     try:
         async with async_session_maker() as db:
             await db.execute("SELECT 1")
@@ -24,19 +24,18 @@ async def system_health():
     except Exception:
         health["services"]["database"] = "unhealthy"
         health["status"] = "degraded"
-    
+
     circuits = get_all_circuit_states()
     health["services"]["circuits"] = circuits
-    
-    from services.worker.scrapers.circuit_breaker import SCRAPER_CIRCUITS
+
     failed_circuits = [c for c in circuits if c["state"] == "open"]
-    
+
     if failed_circuits:
         health["status"] = "degraded"
         health["services"]["scrapers"] = f"{len(failed_circuits)} platforms failing"
     else:
         health["services"]["scrapers"] = "healthy"
-    
+
     return JSONResponse(
         content=health,
         status_code=200 if health["status"] == "healthy" else 503,

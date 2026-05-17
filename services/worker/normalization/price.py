@@ -20,7 +20,8 @@ PRICE_PATTERNS = [
     r"([\d,]+(?:\.\d{2})?)\s*(?:AED|د\.إ)",
     r"(?:Price|price|Cost|cost|Prix):?\s*[A-Z]?\s*([\d,]+)",
     r"(?:AED|د\.إ)\s*([\d,]+)",
-    r"([\d,]{1,3}(?:,\d{3})*(?:\.\d{2})?)",
+    r"(\d{1,3}(?:,\d{3})+(?:\.\d{2})?)",
+    r"(\d{4,}(?:\.\d{2})?)",
 ]
 
 CURRENCY_MAP = {
@@ -57,8 +58,11 @@ def extract_price(text: str) -> Optional[float]:
     money_match = re.findall(r"[\d,]+(?:\.\d{2})?", text)
     for match_str in money_match:
         try:
-            price = float(match_str.replace(",", ""))
-            if 1 < price < 100000:
+            clean_str = match_str.replace(",", "")
+            if not clean_str.replace(".", "").isdigit():
+                continue
+            price = float(clean_str)
+            if 1 < price < 100000 and len(clean_str) >= 2:
                 return price
         except ValueError:
             continue

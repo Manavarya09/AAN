@@ -4,8 +4,7 @@ import asyncio
 import random
 from typing import Optional
 
-from playwright.async_api import Browser, BrowserContext, Page, async_playwright
-
+from playwright.async_api import Browser, BrowserContext, async_playwright
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",

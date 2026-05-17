@@ -1,15 +1,14 @@
 """Stripe payment integration for subscriptions."""
 
 import os
-import stripe
 from typing import Optional
-from uuid import UUID
 
+import stripe
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from services.api.routes.auth import get_current_user
 from config.database.models import User
+from services.api.routes.auth import get_current_user
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
@@ -55,15 +54,15 @@ async def create_checkout_session(
     current_user: User = Depends(get_current_user),
 ):
     """Create Stripe checkout session for subscription."""
-    
+
     if request.plan_id not in PLANS:
         raise HTTPException(status_code=400, detail="Invalid plan")
-    
+
     plan = PLANS[request.plan_id]
-    
+
     if plan["price_monthly"] == 0:
         raise HTTPException(status_code=400, detail="Free plan doesn't need payment")
-    
+
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
@@ -86,9 +85,9 @@ async def create_checkout_session(
             cancel_url=request.cancel_url,
             metadata={"user_id": str(current_user.id), "plan_id": request.plan_id},
         )
-        
+
         return {"session_id": session.id, "url": session.url}
-    
+
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -96,9 +95,9 @@ async def create_checkout_session(
 @router.post("/webhook")
 async def stripe_webhook(payload: bytes, signature: str):
     """Handle Stripe webhooks."""
-    
+
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-    
+
     try:
         event = stripe.Webhook.construct_event(
             payload, signature, webhook_secret
@@ -107,21 +106,21 @@ async def stripe_webhook(payload: bytes, signature: str):
         raise HTTPException(status_code=400, detail="Invalid payload")
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
-    
+
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         user_id = session["metadata"]["user_id"]
         plan_id = session["metadata"]["plan_id"]
-        
+
         # Update user subscription in database
         # await update_user_subscription(user_id, plan_id)
         print(f"User {user_id} subscribed to {plan_id}")
-    
+
     elif event["type"] == "customer.subscription.deleted":
         subscription = event["data"]["object"]
         # Handle cancellation
         print(f"Subscription {subscription['id']} cancelled")
-    
+
     return {"received": True}
 
 
@@ -153,7 +152,7 @@ async def cancel_subscription(
     current_user: User = Depends(get_current_user),
 ):
     """Cancel user's subscription."""
-    
+
     # In production, find and cancel Stripe subscription
     return {"status": "cancelled", "message": "Subscription cancelled"}
 
@@ -163,6 +162,6 @@ async def create_portal_session(
     current_user: User = Depends(get_current_user),
 ):
     """Create Stripe customer portal session."""
-    
+
     # In production, create portal link for billing management
     return {"url": "/settings/billing"}

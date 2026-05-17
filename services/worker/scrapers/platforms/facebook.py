@@ -81,16 +81,16 @@ class FacebookMarketplaceScraper(BaseScraper):
         params["q"] = query
         params["start"] = (page_num - 1) * self.config.page_size
 
-        search_url = f"{self.config.search_url}"
-        
+        _search_url = f"{self.config.search_url}"
+
         url = f"{self.config.base_url}/marketplace/?{params['q']}"
-        
+
         logger.info(f"Scraping Facebook Marketplace: {url}")
 
         try:
             page = await self.context.new_page()
             await page.goto(url, timeout=30000)
-            
+
             await page.wait_for_load_state("networkidle")
             await page.wait_for_timeout(2000)
 

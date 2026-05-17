@@ -1,16 +1,13 @@
 """Developer API for external integrations."""
 
-import os
-from uuid import UUID
 from datetime import datetime, timedelta
-
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
 from typing import Optional
 
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+
+from config.database.models import User
 from services.api.routes.auth import get_current_user
-from config.database.models import User, NegotiationJob
 
 router = APIRouter(prefix="/api/v1/developer", tags=["developer"])
 
@@ -43,11 +40,11 @@ async def create_api_key(
     current_user: User = Depends(get_current_user),
 ):
     """Create a new API key for developer access."""
-    
+
     import secrets
-    
+
     api_key = f"aan_{secrets.token_urlsafe(32)}"
-    
+
     return {
         "id": secrets.token_hex(8),
         "name": key_data.name,
@@ -63,7 +60,7 @@ async def list_api_keys(
     current_user: User = Depends(get_current_user),
 ):
     """List user's API keys."""
-    
+
     return {
         "api_keys": [
             {
@@ -84,7 +81,7 @@ async def revoke_api_key(
     current_user: User = Depends(get_current_user),
 ):
     """Revoke an API key."""
-    
+
     return {"status": "revoked", "key_id": key_id}
 
 
@@ -94,12 +91,10 @@ async def create_webhook(
     current_user: User = Depends(get_current_user),
 ):
     """Register a webhook for events."""
-    
-    import hmac
-    import hashlib
-    
-    secret = webhook_data.secret.encode()
-    
+
+
+    _secret = webhook_data.secret.encode()
+
     return {
         "id": "webhook_123",
         "url": webhook_data.url,
@@ -114,7 +109,7 @@ async def list_webhooks(
     current_user: User = Depends(get_current_user),
 ):
     """List user's webhooks."""
-    
+
     return {"webhooks": []}
 
 
@@ -124,7 +119,7 @@ async def delete_webhook(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a webhook."""
-    
+
     return {"status": "deleted", "webhook_id": webhook_id}
 
 
@@ -133,7 +128,7 @@ async def get_usage(
     current_user: User = Depends(get_current_user),
 ):
     """Get API usage statistics."""
-    
+
     return {
         "period": "current_month",
         "requests": {
@@ -156,7 +151,7 @@ async def check_rate_limit(
     current_user: User = Depends(get_current_user),
 ):
     """Check current rate limit status."""
-    
+
     return {
         "limit": 10000,
         "remaining": 9850,
@@ -167,26 +162,26 @@ async def check_rate_limit(
 
 class RateLimitMiddleware:
     """Simple rate limiting for API."""
-    
+
     def __init__(self):
         self.requests = {}
         self.limit = 10000
         self.window = 3600
-    
+
     def check_limit(self, user_id: str) -> bool:
         now = datetime.utcnow()
-        
+
         if user_id not in self.requests:
             self.requests[user_id] = []
-        
+
         self.requests[user_id] = [
             t for t in self.requests[user_id]
             if (now - t).total_seconds() < self.window
         ]
-        
+
         if len(self.requests[user_id]) >= self.limit:
             return False
-        
+
         self.requests[user_id].append(now)
         return True
 

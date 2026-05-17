@@ -75,7 +75,7 @@ ARABIC_STALL = ["ربما", "بعدين", "سأفكر", "ما ادري"]
 def extract_price(text: str) -> Optional[float]:
     """Extract price from text with multi-language support."""
     text = text.lower().strip()
-    
+
     for pattern in PRICE_EXTRACTION_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
@@ -84,7 +84,7 @@ def extract_price(text: str) -> Optional[float]:
                 return float(price_str)
             except (ValueError, AttributeError):
                 continue
-    
+
     for pattern in ARABIC_PRICE_PATTERNS:
         match = re.search(pattern, text)
         if match:
@@ -93,49 +93,49 @@ def extract_price(text: str) -> Optional[float]:
                 return float(price_str)
             except (ValueError, AttributeError):
                 continue
-    
+
     return None
 
 
 def detect_intent(text: str) -> Intent:
     """Detect seller intent from message."""
     text_lower = text.lower()
-    
+
     if any(kw in text_lower for kw in ACCEPT_KEYWORDS):
         return Intent.ACCEPT
-    
+
     if any(kw in text_lower for kw in ARABIC_ACCEPT):
         return Intent.ACCEPT
-    
+
     if any(kw in text_lower for kw in REJECT_KEYWORDS) or any(kw in text_lower for kw in ARABIC_REJECT):
         return Intent.REJECT
-    
+
     if any(kw in text_lower for kw in QUESTION_KEYWORDS):
         return Intent.QUESTION
-    
+
     if any(kw in text_lower for kw in STALL_KEYWORDS) or any(kw in text_lower for kw in ARABIC_STALL):
         return Intent.STALL
-    
+
     price = extract_price(text)
     if price:
         return Intent.COUNTER
-    
+
     return Intent.UNKNOWN
 
 
 def detect_sentiment(text: str) -> Sentiment:
     """Detect sentiment of message."""
     text_lower = text.lower()
-    
+
     positive_count = sum(1 for kw in ACCEPT_KEYWORDS if kw in text_lower)
     negative_count = sum(1 for kw in REJECT_KEYWORDS if kw in text_lower)
-    
+
     positive_arabic = sum(1 for kw in ARABIC_ACCEPT if kw in text_lower)
     negative_arabic = sum(1 for kw in ARABIC_REJECT if kw in text_lower)
-    
+
     total_positive = positive_count + positive_arabic
     total_negative = negative_count + negative_arabic
-    
+
     if total_positive > total_negative:
         return Sentiment.POSITIVE
     elif total_negative > total_positive:
@@ -152,32 +152,32 @@ def extract_seller_info(text: str) -> dict:
         "urgency": None,
         "includes": [],
     }
-    
+
     text_lower = text.lower()
-    
+
     condition_terms = ["excellent", "good condition", "mint", "barely used", "like new", "original"]
     for term in condition_terms:
         if term in text_lower:
             result["condition_notes"] = term
             break
-    
+
     reason_terms = ["upgrading", "moving", "not using", "don't need", "new phone"]
     for term in reason_terms:
         if term in text_lower:
             result["reason_for_selling"] = term
             break
-    
+
     urgency_terms = ["urgent", "quick sale", "asap", "today", "fast"]
     for term in urgency_terms:
         if term in text_lower:
             result["urgency"] = term
             break
-    
+
     include_terms = ["box", "charger", "warranty", "original", "covers", "case"]
     for term in include_terms:
         if term in text_lower:
             result["includes"].append(term)
-    
+
     return result
 
 
@@ -187,11 +187,11 @@ async def parse_message_llm_fallback(message: str) -> dict:
     sentiment = detect_sentiment(message)
     extracted_price = extract_price(message)
     seller_info = extract_seller_info(message)
-    
+
     confidence = 0.8
     if intent == Intent.UNKNOWN:
         confidence = 0.3
-    
+
     return {
         "intent": intent.value,
         "sentiment": sentiment.value,

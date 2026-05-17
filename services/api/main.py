@@ -1,23 +1,22 @@
 """Autonomous AI Negotiator (AAN) - FastAPI Application."""
 
+import json
 from contextlib import asynccontextmanager
+from typing import Dict, List
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
-from typing import Dict, List
-import json
-import asyncio
+from services.api.routes.notifications import router as notifications_router
 
 from config.core.settings import get_settings
 from config.database import init_db
 from services.api.routes import jobs, listings
-from services.api.routes.dashboard import router as dashboard_router
-from services.api.routes.auth import router as auth_router
-from services.api.routes.notifications import router as notifications_router
-from services.api.routes.payments import router as payments_router
-from services.api.routes.developer import router as developer_router
 from services.api.routes.analytics import router as analytics_router
-
+from services.api.routes.auth import router as auth_router
+from services.api.routes.dashboard import router as dashboard_router
+from services.api.routes.developer import router as developer_router
+from services.api.routes.payments import router as payments_router
 
 settings = get_settings()
 
@@ -82,25 +81,25 @@ app.include_router(analytics_router)
 async def websocket_job_updates(websocket: WebSocket, job_id: str):
     """WebSocket endpoint for real-time job updates."""
     await websocket.accept()
-    
+
     if job_id not in active_connections:
         active_connections[job_id] = []
     active_connections[job_id].append(websocket)
-    
+
     try:
         await websocket.send_json({
             "event": "connected",
             "job_id": job_id,
             "message": "Connected to job updates"
         })
-        
+
         while True:
             data = await websocket.receive_text()
             data_json = json.loads(data)
-            
+
             if data_json.get("type") == "ping":
                 await websocket.send_json({"type": "pong"})
-                
+
     except WebSocketDisconnect:
         pass
     finally:

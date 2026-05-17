@@ -1,13 +1,11 @@
 """Main normalization orchestrator."""
 
 import logging
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 from services.worker.normalization.condition import (
     extract_negotiability,
-    normalize_condition,
     normalize_listing_condition,
 )
 from services.worker.normalization.deduplication import deduplicate_listings

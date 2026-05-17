@@ -9,13 +9,13 @@ import structlog
 
 def configure_logging(log_level: str = "INFO") -> None:
     """Configure structured logging for the application."""
-    
+
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, log_level.upper()),
     )
-    
+
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,

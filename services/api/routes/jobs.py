@@ -1,9 +1,8 @@
 """Jobs API router."""
 
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -101,12 +100,12 @@ async def get_job_status(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    from config.database.models import RawListing, NormalizedListing, Negotiation
+    from config.database.models import Negotiation, NormalizedListing, RawListing
 
     raw_result = await db.execute(
         select(RawListing).where(RawListing.job_id == job_id)
     )
-    raw_count = len(raw_result.scalars().all())
+    _raw_count = len(raw_result.scalars().all())
 
     norm_result = await db.execute(
         select(NormalizedListing).where(NormalizedListing.job_id == job_id)
