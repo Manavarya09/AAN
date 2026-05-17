@@ -246,3 +246,123 @@ class TestDeduplication:
         )
         
         assert result == False
+
+
+class TestIntentParserV2:
+    """Tests for intent parser v2."""
+    
+    def test_counter_intent_v2(self):
+        from services.worker.negotiation.intent_parser_v2 import detect_intent, Intent
+        
+        intent = detect_intent("Can you do 3000?")
+        assert intent == Intent.COUNTER
+    
+    def test_accept_intent_v2(self):
+        from services.worker.negotiation.intent_parser_v2 import detect_intent, Intent
+        
+        intent = detect_intent("Ok, sounds good, take it")
+        assert intent == Intent.ACCEPT
+    
+    def test_reject_intent_v2(self):
+        from services.worker.negotiation.intent_parser_v2 import detect_intent, Intent
+        
+        intent = detect_intent("No thanks, not interested")
+        assert intent == Intent.REJECT
+    
+    def test_extract_price_v2(self):
+        from services.worker.negotiation.intent_parser_v2 import extract_price
+        
+        price = extract_price("I'll take 2500 AED")
+        assert price == 2500
+
+
+class TestScoring:
+    """Tests for listing scoring."""
+    
+    def test_score_with_negotiable(self):
+        from services.worker.normalization.scoring import calculate_listing_score
+        
+        score = calculate_listing_score(
+            price=3000,
+            min_price=2500,
+            max_price=4000,
+            condition_score=0.8,
+            posted_days_ago=5,
+            is_negotiable=True,
+            distance_km=5,
+            radius_km=30,
+        )
+        assert score > 0.7
+    
+    def test_score_with_non_negotiable(self):
+        from services.worker.normalization.scoring import calculate_listing_score
+        
+        score = calculate_listing_score(
+            price=4000,
+            min_price=2500,
+            max_price=4000,
+            condition_score=0.8,
+            posted_days_ago=5,
+            is_negotiable=False,
+            distance_km=5,
+            radius_km=30,
+        )
+        assert score < 0.6
+
+
+class TestScraperConfig:
+    """Tests for scraper configurations."""
+    
+    def test_dubizzle_config(self):
+        from config.scrapers.configs import PLATFORM_CONFIGS
+        
+        config = PLATFORM_CONFIGS["dubizzle"]
+        assert "dubizzle" in config.base_url
+    
+    def test_olx_config(self):
+        from config.scrapers.configs import PLATFORM_CONFIGS
+        
+        config = PLATFORM_CONFIGS["olx"]
+        assert "olx" in config.base_url
+
+
+class TestAgentStrategy:
+    """Tests for negotiation agent strategies."""
+    
+    def test_fair_value_strategy(self):
+        from services.worker.negotiation.agent import AgentState, NegotiationStrategy
+        from uuid import uuid4
+        
+        agent = AgentState(
+            job_id=uuid4(),
+            listing_id=uuid4(),
+            seller_name="John",
+            seller_contact="john@test.com",
+            platform="dubizzle",
+            list_price=4000,
+            target_price=3500,
+            max_price=4000,
+            strategy=NegotiationStrategy.FAIR_VALUE,
+        )
+        
+        initial = agent.get_counter_offer()
+        assert initial == 3500 * 0.95
+    
+    def test_bundle_strategy(self):
+        from services.worker.negotiation.agent import AgentState, NegotiationStrategy
+        from uuid import uuid4
+        
+        agent = AgentState(
+            job_id=uuid4(),
+            listing_id=uuid4(),
+            seller_name="John",
+            seller_contact="john@test.com",
+            platform="dubizzle",
+            list_price=4000,
+            target_price=3500,
+            max_price=4000,
+            strategy=NegotiationStrategy.BUNDLE,
+        )
+        
+        initial = agent.get_counter_offer()
+        assert initial == 3500
