@@ -7,6 +7,8 @@ from typing import Dict, List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from services.api.routes.notifications import router as notifications_router
 
 from config.core.settings import get_settings
@@ -19,6 +21,8 @@ from services.api.routes.developer import router as developer_router
 from services.api.routes.payments import router as payments_router
 
 settings = get_settings()
+
+limiter = Limiter(key_func=get_remote_address)
 
 active_connections: Dict[str, List[WebSocket]] = {}
 
@@ -62,6 +66,8 @@ app = FastAPI(
     openapi_url="/openapi.json",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
 
 app.add_middleware(
     CORSMiddleware,
@@ -112,15 +118,18 @@ async def websocket_job_updates(websocket: WebSocket, job_id: str):
 
 
 @app.get("/health")
+@limiter.limit("100/minute")
 async def health_check():
     return {"status": "healthy", "service": "AAN API"}
 
 
 @app.get("/")
+@limiter.limit("100/minute")
 async def root():
     return {"message": "Autonomous AI Negotiator API", "version": "1.0.0"}
 
 
 @app.get("/metrics")
+@limiter.limit("50/minute")
 async def metrics():
     return PlainTextResponse(generate_latest())

@@ -32,6 +32,7 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "stripe>=7.0.0",
     "python-telegram-bot>=20.0.0",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
